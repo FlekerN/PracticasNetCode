@@ -1,5 +1,4 @@
 using System;
-using UnityEditor.ShaderGraph;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using static Controls;
@@ -38,5 +37,12 @@ public class InputReader : ScriptableObject, IPlayerActions
             PrimaryFireEvent?.Invoke(false);
         }
 
+    }
+    private void OnDisable()
+    {
+        if (controls != null)
+        {
+            controls.Player.Disable();
+        }
     }
 }

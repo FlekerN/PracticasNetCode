@@ -475,7 +475,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1732136558
+  GlobalObjectIdHash: 2622415081
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -546,11 +546,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c1a7e2686b698143ab318c3a54f59b3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MovementController
+  ShowTopMostFoldoutHeaderGroup: 1
   moveSpeed: 5
   rotationSpeed: 120
-  turretPivot: {fileID: 0}
+  turretPivot: {fileID: 4260201589467732997}
   turretRotationSpeed: 120
-  inputReader: {fileID: 0}
+  inputReader: {fileID: 11400000, guid: bf08a3e75302c5a40971b8bbb6e37c50, type: 2}
 --- !u!50 &2264680159028427856
 Rigidbody2D:
   serializedVersion: 5

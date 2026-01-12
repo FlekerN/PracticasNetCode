@@ -84,11 +84,11 @@ public class ProjectileLauncher : NetworkBehaviour
         spawnPos,
         Quaternion.identity
         );
-
+ 
         var projectileCollider =
         projectileInstance.GetComponent<Collider2D>();
         Physics2D.IgnoreCollision(playerCollider, projectileCollider);
-
+   
         if (projectileInstance.TryGetComponent<Rigidbody2D>(out var rb))
         {
             // Importante en 2D usar "transform.up" en lugar de "transform.forward"
@@ -99,6 +99,7 @@ public class ProjectileLauncher : NetworkBehaviour
             muzzleFlash.SetActive(true);
             muzzleFlashTimer = muzzleFlashDuration;
         }
+    
         projectileInstance.transform.up = direction;
     }
 
@@ -115,13 +116,15 @@ public class ProjectileLauncher : NetworkBehaviour
         var projectileCollider =
         projectileInstance.GetComponent<Collider2D>();
         Physics2D.IgnoreCollision(playerCollider, projectileCollider);
-        projectileInstance.transform.up = direction;
 
+        projectileInstance.transform.up = direction;
+        
         if (projectileInstance.TryGetComponent<Rigidbody2D>(out var rb))
         {
             // Importante en 2D usar "transform.up" en lugar de "transform.forward"
             rb.linearVelocity = rb.transform.up * projectileSpeed;
         }
+        
         // Notificar a todos los clientes
         SpawnDummyProjectileClientRpc(spawnPos, direction);
     }

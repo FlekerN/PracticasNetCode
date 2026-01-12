@@ -1,12 +1,13 @@
 using UnityEngine;
+using Unity.Netcode;
 
-public class TankMovement2D : MonoBehaviour
+public class TankMovement2D : NetworkBehaviour
 {
     [Header("Movimiento del tanque")]
     public float moveSpeed = 5f;
     public float rotationSpeed = 120f;
 
-    [Header("Rotación de la torreta")]
+    [Header("Rotaciï¿½n de la torreta")]
     public Transform turretPivot;
     public float turretRotationSpeed = 120f;
 
@@ -23,19 +24,19 @@ public class TankMovement2D : MonoBehaviour
 
     void Update()
     {
+        if (!IsOwner) return;
         // Entrada de movimiento (W/S o flechas)
         moveInput = Input.GetAxisRaw("Vertical");
 
-        // Entrada de rotación del tanque (A/D o flechas)
-        rotationInput = -Input.GetAxisRaw("Horizontal");
+        // Entrada de rotaciï¿½n del tanque (A/D o flechas)
+        rotationInput = Input.GetAxisRaw("Horizontal");
 
-        // Entrada de rotación de torreta (Q/E)
+        // Entrada de rotaciï¿½n de torreta (Q/E)
         turretInput = 0f;
         if (Input.GetKey(KeyCode.Q)) turretInput = 1f;     // Izquierda
         if (Input.GetKey(KeyCode.E)) turretInput = -1f;    // Derecha
 
-        // Rotar torreta en Update (no física)
-        RotateTurret();
+        // Rotar torreta en Update (no fï¿½sica)
     }
 
     void FixedUpdate()
@@ -45,6 +46,8 @@ public class TankMovement2D : MonoBehaviour
 
         // Rotar tanque
         rb.MoveRotation(rb.rotation + rotationInput * rotationSpeed * Time.fixedDeltaTime);
+        
+        RotateTurret();
     }
 
     void RotateTurret()
