@@ -52,9 +52,61 @@ PrefabInstance:
       propertyPath: m_Name
       value: ServerProyectile
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: -3431924968077720238, guid: ee2be6307e769724ea297be480237d0d, type: 3}
+    - {fileID: 647137893305327178, guid: ee2be6307e769724ea297be480237d0d, type: 3}
     m_RemovedGameObjects:
     - {fileID: 5112597950322141329, guid: ee2be6307e769724ea297be480237d0d, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5193837028855080208, guid: ee2be6307e769724ea297be480237d0d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1107850498387626492}
+    - targetCorrespondingSourceObject: {fileID: 5193837028855080208, guid: ee2be6307e769724ea297be480237d0d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2811508213339420524}
   m_SourcePrefab: {fileID: 100100000, guid: ee2be6307e769724ea297be480237d0d, type: 3}
+--- !u!1 &7398511550367782923 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5193837028855080208, guid: ee2be6307e769724ea297be480237d0d, type: 3}
+  m_PrefabInstance: {fileID: 3366718125552090395}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1107850498387626492
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7398511550367782923}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 444229835
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &2811508213339420524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7398511550367782923}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c0bfe2d20d796ce4388de12d0038e037, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DealDamageOnContact
+  ShowTopMostFoldoutHeaderGroup: 1
+  damage: 25

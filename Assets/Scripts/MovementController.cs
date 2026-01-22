@@ -1,59 +1,134 @@
 using UnityEngine;
 using Unity.Netcode;
 
-public class TankMovement2D : NetworkBehaviour
+public class TankNetController2D : NetworkBehaviour
 {
-    [Header("Movimiento del tanque")]
-    public float moveSpeed = 5f;
-    public float rotationSpeed = 120f;
+    [Header("Refs")]
+    [SerializeField] private Transform turretPivot;
 
-    [Header("Rotaci�n de la torreta")]
-    public Transform turretPivot;
-    public float turretRotationSpeed = 120f;
+    [Header("Movement")]
+    [SerializeField] private float moveSpeed = 5f;         
+    [SerializeField] private float turnSpeed = 180f;        
 
-    private Rigidbody2D rb;
-    private float moveInput;
-    private float rotationInput;
-    private float turretInput;
-    [SerializeField] private InputReader inputReader;
+    [Header("Turret")]
+    [SerializeField] private float turretTurnSpeed = 220f;  
 
-    void Start()
+    [Header("Smoothing (clients)")]
+    [SerializeField] private float posLerp = 18f;
+    [SerializeField] private float rotLerp = 18f;
+    [SerializeField] private float turretLerp = 22f;
+
+    // ===== Network state (server -> everyone) =====
+    private readonly NetworkVariable<Vector2> netPos =
+        new(writePerm: NetworkVariableWritePermission.Server);
+
+    private readonly NetworkVariable<float> netTankRot =
+        new(writePerm: NetworkVariableWritePermission.Server); 
+
+    private readonly NetworkVariable<float> netTurretRot =
+        new(writePerm: NetworkVariableWritePermission.Server); 
+
+
+    private float srvMove;     
+    private float srvTurn;     
+    private float srvTurret;  
+
+    public override void OnNetworkSpawn()
     {
-        rb = GetComponent<Rigidbody2D>();
+        if (IsServer)
+        {
+            // Inicializar estado en server
+            netPos.Value = transform.position;
+            netTankRot.Value = transform.eulerAngles.z;
+
+            if (turretPivot != null)
+                netTurretRot.Value = turretPivot.localEulerAngles.z;
+        }
     }
 
-    void Update()
+    private void Update()
     {
-        if (!IsOwner) return;
-        // Entrada de movimiento (W/S o flechas)
-        moveInput = Input.GetAxisRaw("Vertical");
+        if (IsOwner)
+        {
+            // Input local (teclado)
+            float move = (Input.GetKey(KeyCode.W) ? 1f : 0f) + (Input.GetKey(KeyCode.S) ? -1f : 0f);
+            float turn = (Input.GetKey(KeyCode.D) ? 1f : 0f) + (Input.GetKey(KeyCode.A) ? -1f : 0f);
+            float turret = (Input.GetKey(KeyCode.E) ? 1f : 0f) + (Input.GetKey(KeyCode.Q) ? -1f : 0f);
 
-        // Entrada de rotaci�n del tanque (A/D o flechas)
-        rotationInput = Input.GetAxisRaw("Horizontal");
+            // Enviar al server (dueño -> server)
+            SubmitInputServerRpc(move, turn, turret);
+        }
 
-        // Entrada de rotaci�n de torreta (Q/E)
-        turretInput = 0f;
-        if (Input.GetKey(KeyCode.Q)) turretInput = 1f;     // Izquierda
-        if (Input.GetKey(KeyCode.E)) turretInput = -1f;    // Derecha
 
-        // Rotar torreta en Update (no f�sica)
+        if (!IsServer)
+        {
+            // Posición
+            Vector3 targetPos = new Vector3(netPos.Value.x, netPos.Value.y, transform.position.z);
+            transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * posLerp);
+
+            // Rotación del tanque (Z)
+            float targetTankZ = netTankRot.Value;
+            float currentZ = transform.eulerAngles.z;
+            float newZ = Mathf.LerpAngle(currentZ, targetTankZ, Time.deltaTime * rotLerp);
+            transform.rotation = Quaternion.Euler(0f, 0f, newZ);
+
+            // Rotación de la torreta (Z local)
+            if (turretPivot != null)
+            {
+                float targetTurretZ = netTurretRot.Value;
+                float currentTurretZ = turretPivot.localEulerAngles.z;
+                float newTurretZ = Mathf.LerpAngle(currentTurretZ, targetTurretZ, Time.deltaTime * turretLerp);
+                turretPivot.localRotation = Quaternion.Euler(0f, 0f, newTurretZ);
+            }
+        }
+        else
+        {
+            ApplyServerStateInstant();
+        }
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
-        // Mover tanque
-        rb.MovePosition(rb.position + (Vector2)transform.up * moveInput * moveSpeed * Time.fixedDeltaTime);
+        if (!IsServer) return;
 
-        // Rotar tanque
-        rb.MoveRotation(rb.rotation + rotationInput * rotationSpeed * Time.fixedDeltaTime);
-        
-        RotateTurret();
+        float dt = Time.fixedDeltaTime;
+
+        // 1) Girar tanque sobre sí mismo
+        float tankZ = transform.eulerAngles.z + srvTurn * turnSpeed * dt;
+        transform.rotation = Quaternion.Euler(0f, 0f, tankZ);
+
+        // 2) Avanzar/retroceder según donde mira (transform.up en 2D)
+        Vector2 forward = transform.up; // dirección "hacia arriba" del sprite
+        Vector2 newPos = (Vector2)transform.position + forward * (srvMove * moveSpeed * dt);
+        transform.position = new Vector3(newPos.x, newPos.y, transform.position.z);
+
+        // 3) Rotar torreta (local Z)
+        if (turretPivot != null)
+        {
+            float turretZ = turretPivot.localEulerAngles.z + srvTurret * turretTurnSpeed * dt;
+            turretPivot.localRotation = Quaternion.Euler(0f, 0f, turretZ);
+        }
+
+        // 4) Publicar estado a la red
+        netPos.Value = transform.position;
+        netTankRot.Value = transform.eulerAngles.z;
+        if (turretPivot != null) netTurretRot.Value = turretPivot.localEulerAngles.z;
     }
 
-    void RotateTurret()
+    [ServerRpc]
+    private void SubmitInputServerRpc(float move, float turn, float turret)
     {
-        if (turretPivot == null) return;
+        srvMove = Mathf.Clamp(move, -1f, 1f);
+        srvTurn = Mathf.Clamp(turn, -1f, 1f);
+        srvTurret = Mathf.Clamp(turret, -1f, 1f);
+    }
 
-        turretPivot.Rotate(0f, 0f, turretInput * turretRotationSpeed * Time.deltaTime);
+    private void ApplyServerStateInstant()
+    {
+        transform.position = new Vector3(netPos.Value.x, netPos.Value.y, transform.position.z);
+        transform.rotation = Quaternion.Euler(0f, 0f, netTankRot.Value);
+
+        if (turretPivot != null)
+            turretPivot.localRotation = Quaternion.Euler(0f, 0f, netTurretRot.Value);
     }
 }
