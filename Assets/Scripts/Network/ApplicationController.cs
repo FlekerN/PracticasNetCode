@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Rendering;
-using static Networking.Cliente.AuthenticationWrapper;
 
 namespace Networking
 {
@@ -16,6 +15,8 @@ namespace Networking
         [SerializeField] private TextMeshProUGUI loadingText;
 
         private static ApplicationController instance;
+
+        private ClienteGameManager gameManager;
 
         private async void Awake()
         {
@@ -28,25 +29,23 @@ namespace Networking
             instance = this;
             DontDestroyOnLoad(gameObject);
 
-            // 1) Auth primero (inicializa UnityServices dentro)
-            var authResult = await AuthenticationWrapper.DoAuth(maxTries: 5, retryDelayMs: 1000, timeoutMs: 20000);
-            Debug.Log($"Auth result: {authResult} | Active: {AuthenticationWrapper.IsSessionActive()}");
+            gameManager = new ClienteGameManager();
 
-            if (authResult != AuthenticationWrapper.AuthState.Authenticated)
+            // 1) Auth (dentro de ClienteGameManager)
+            bool authOk = await gameManager.InitAsync();
+
+            if (!authOk)
             {
                 Debug.LogWarning($"Auth failed: {AuthenticationWrapper.LastException}");
-                // Aquí decides: ¿sigues offline? ¿paras? ¿muestras UI?
-                // return; // si quieres cortar el bootstrap si no hay auth
+                // Aquí puedes mostrar UI, reintentar, etc. Por ahora NO avanzamos.
+                return;
             }
 
-            // 2) Luego bootstrap (ya con servicios inicializados)
+            // 2) Luego bootstrap (ya con sesión)
             await BootstrapAsync();
-        }
 
-        private void Update()
-        {
-            if (Time.frameCount % 30 == 0) // cada ~0.5s
-                Debug.Log($"[AUTH] Current: {AuthenticationWrapper.State}");
+            // 3) Ir al menú
+            gameManager.GoToMenu();
         }
 
         private void OnEnable()
@@ -61,18 +60,28 @@ namespace Networking
 
         private void UpdateLoadingText(AuthenticationWrapper.AuthState state)
         {
+            if (loadingText == null) return;
+
             switch (state)
             {
-                case AuthState.Authenticating:
+                case AuthenticationWrapper.AuthState.Authenticating:
                     loadingText.text = "Loading...";
                     break;
 
-                case AuthState.Authenticated:
-                    loadingText.text = "Conected Succesfully";
+                case AuthenticationWrapper.AuthState.Authenticated:
+                    loadingText.text = "Connected Successfully";
                     break;
 
-                case AuthState.Error:
+                case AuthenticationWrapper.AuthState.Error:
                     loadingText.text = "Connection Error";
+                    break;
+
+                case AuthenticationWrapper.AuthState.Timeout:
+                    loadingText.text = "Connection Timeout";
+                    break;
+
+                default:
+                    loadingText.text = "";
                     break;
             }
         }
@@ -83,13 +92,11 @@ namespace Networking
 
             if (isDedicatedServer)
             {
-                // Solo servidor
                 HostSingleton host = Instantiate(hostPrefab);
                 await host.InitAsync();
             }
             else
             {
-                // Host + Cliente
                 HostSingleton host = Instantiate(hostPrefab);
                 ClienteSingleton client = Instantiate(clientPrefab);
 
@@ -104,6 +111,5 @@ namespace Networking
         {
             return SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null;
         }
-  
     }
 }

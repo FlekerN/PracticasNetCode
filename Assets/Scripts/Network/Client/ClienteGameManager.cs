@@ -1,16 +1,33 @@
 using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using Unity.Services.Core;
+using Networking.Cliente;
 
 namespace Networking.Client
 {
-    // Clase de "lógica de negocio" (UGS, auth, matchmaking...) sin depender de Unity lifecycle.
     public class ClienteGameManager
     {
-        public async Task InitAsync()
+        public const string MenuSceneName = "Menu";
+
+        public async Task<bool> InitAsync()
         {
-            // Implementación mínima simulando trabajo asíncrono (futuro: UGS calls)
-            await Task.Yield();
-            Debug.Log("[ClienteGameManager] InitAsync completado (mínimo).");
+            // 1) Inicializa UGS
+            if (UnityServices.State != ServicesInitializationState.Initialized)
+                await UnityServices.InitializeAsync();
+
+            // 2) Autenticación
+            var authResult = await AuthenticationWrapper.DoAuth(maxTries: 5, retryDelayMs: 1000, timeoutMs: 20000);
+
+            bool ok = authResult == AuthenticationWrapper.AuthState.Authenticated;
+            Debug.Log($"[ClienteGameManager] Auth ok? {ok} | Result: {authResult}");
+
+            return ok;
+        }
+
+        public void GoToMenu()
+        {
+            SceneManager.LoadScene(MenuSceneName);
         }
     }
 }
