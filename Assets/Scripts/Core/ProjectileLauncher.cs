@@ -74,65 +74,68 @@ public class ProjectileLauncher : NetworkBehaviour
 
         SpawnDummyProjectile(projectileSpawnPoint.position, projectileSpawnPoint.up);
         PrimaryFireServerRpc(projectileSpawnPoint.position, projectileSpawnPoint.up);
-   
+
+
     }
 
     private void SpawnDummyProjectile(Vector3 spawnPos, Vector3 direction)
     {
         GameObject projectileInstance = Instantiate(
-        clientProjectilePrefab,
-        spawnPos,
-        Quaternion.identity
+            clientProjectilePrefab,
+            spawnPos,
+            Quaternion.identity
         );
- 
-        var projectileCollider =
-        projectileInstance.GetComponent<Collider2D>();
+
+        Vector2 dir2D = ((Vector2)direction).normalized;
+        projectileInstance.transform.up = dir2D;
+
+        var projectileCollider = projectileInstance.GetComponent<Collider2D>();
         Physics2D.IgnoreCollision(playerCollider, projectileCollider);
-   
+
         if (projectileInstance.TryGetComponent<Rigidbody2D>(out var rb))
         {
-            // Importante en 2D usar "transform.up" en lugar de "transform.forward"
-            rb.linearVelocity = rb.transform.up * projectileSpeed;
+            rb.linearVelocity = dir2D * projectileSpeed;   // o rb.velocity si tu Unity no tiene linearVelocity
         }
+
         if (muzzleFlash != null)
         {
             muzzleFlash.SetActive(true);
             muzzleFlashTimer = muzzleFlashDuration;
         }
-    
-        projectileInstance.transform.up = direction;
     }
 
     [ServerRpc]
     private void PrimaryFireServerRpc(Vector3 spawnPos, Vector3 direction)
     {
-        // Instanciar el proyectil real
         GameObject projectileInstance = Instantiate(
-        serverProjectilePrefab,
-        spawnPos,
-        Quaternion.identity
+            serverProjectilePrefab,
+            spawnPos,
+            Quaternion.identity
         );
 
-        var projectileCollider =
-        projectileInstance.GetComponent<Collider2D>();
+        if (projectileInstance.TryGetComponent<DealDamageOnContact>(out var dealDamage))
+        {
+            dealDamage.SetOwner(OwnerClientId);
+        }
+
+        Vector2 dir2D = ((Vector2)direction).normalized;
+        projectileInstance.transform.up = dir2D;
+
+        var projectileCollider = projectileInstance.GetComponent<Collider2D>();
         Physics2D.IgnoreCollision(playerCollider, projectileCollider);
 
-        projectileInstance.transform.up = direction;
-        
         if (projectileInstance.TryGetComponent<Rigidbody2D>(out var rb))
         {
-            // Importante en 2D usar "transform.up" en lugar de "transform.forward"
-            rb.linearVelocity = rb.transform.up * projectileSpeed;
+            rb.linearVelocity = dir2D * projectileSpeed;   // o rb.velocity
         }
-        
-        // Notificar a todos los clientes
-        SpawnDummyProjectileClientRpc(spawnPos, direction);
+
+        SpawnDummyProjectileClientRpc(spawnPos, dir2D);
     }
 
     [ClientRpc]
     private void SpawnDummyProjectileClientRpc(Vector3 spawnPos, Vector3 direction)
     {
-        if (IsOwner) return; // Evita crear doble proyectil en quien disparo
+        if (IsOwner) return; 
         SpawnDummyProjectile(spawnPos, direction);
     }
 

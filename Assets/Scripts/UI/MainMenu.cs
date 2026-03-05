@@ -1,16 +1,10 @@
+using Networking.Host;
 using UnityEngine;
 
 public class MainMenu : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public async void OnClickHostButton()
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        await HostSingleton.Instance.gameManager.StartHostAsync();
     }
 }
